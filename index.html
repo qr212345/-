@@ -385,7 +385,14 @@ function removeSeat(seat) {
   }
 }
 
-
+function completeCurrentSeat() {
+  if (currentSeat) {
+    displayMessage(`座席「${currentSeat}」の登録を完了しました。`);
+    currentSeat = null;
+    updateCompleteSeatBtn(false);
+    updateCurrentSeatDisplay();
+  }
+}
 
   function removeSeat(seat) {
     if (confirm(`座席「${seat}」を削除しますか？（生徒もすべて削除されます）`)) {
