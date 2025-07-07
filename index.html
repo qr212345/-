@@ -495,7 +495,7 @@
     playersInSeat.forEach(player => {
       const li = document.createElement('li');
       li.textContent = player;
-      li.setAttribute('draggable', 'true');
+      li.setAttribute('tabindex', '0'); // ← これを追加
       li.className = 'draggable-item';
       list.appendChild(li);
     });
@@ -541,6 +541,25 @@
         list.insertBefore(dragged, afterElement);
       }
     });
+
+    // 🆕 スマホタッチ操作を追加
+list.addEventListener('touchstart', (e) => {
+  dragged = e.target.closest('.draggable-item');
+  dragged.classList.add('dragging');
+  e.preventDefault();
+});
+list.addEventListener('touchmove', (e) => {
+  const touch = e.touches[0];
+  const afterElement = getDragAfterElement(list, touch.clientY);
+  if (afterElement && dragged !== afterElement) {
+    list.insertBefore(dragged, afterElement);
+  }
+  e.preventDefault();
+});
+list.addEventListener('touchend', (e) => {
+  if (dragged) dragged.classList.remove('dragging');
+  dragged = null;
+});
 
     function getDragAfterElement(container, y) {
       const draggableElements = [...container.querySelectorAll('.draggable-item:not(.dragging)')];
