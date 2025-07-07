@@ -344,27 +344,27 @@
   }
 
 　function updateTable() {
-  const tbody = document.querySelector('#seatTable tbody');
-  tbody.innerHTML = '';
-  const savedRankings = JSON.parse(localStorage.getItem("seatRankings") || "{}");
+    const tbody = document.querySelector("#seatTable tbody");
+    tbody.innerHTML = '';
+    const savedRankings = JSON.parse(localStorage.getItem("seatRankings") || "{}");
 
-  for (const [seat, people] of Object.entries(seatMap)) {
-    const ranking = savedRankings[seat] || [];
-    let rankingStr = ranking.length > 0 ? ranking.map((p, i) => `${i + 1}:${p}`).join(' ') : '-';
+    for (const [seat, people] of Object.entries(seatMap)) {
+      const ranking = savedRankings[seat] || [];
+      const rankingStr = ranking.length > 0 ? ranking.map((p, i) => `${i + 1}:${p}`).join(' ') : "-";
 
-    const row = document.createElement('tr');
-    row.innerHTML = `
-      <td>${seat} <button class="seat" aria-label="座席${seat}を削除" onclick="removeSeat('${seat}')">❌</button></td>
-      <td>${people.map(p =>
-        `<button class="student" aria-label="生徒${p}を削除" onclick="removeStudent('${seat}', '${p}')">${p} ❌</button>`
-      ).join(' ')}</td>
-      <td>${rankingStr}</td>
-    `;
-    tbody.appendChild(row);
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${seat} <button class="seat" aria-label="座席${seat}を削除" onclick="removeSeat('${seat}')">❌</button></td>
+        <td>${people.map(p =>
+          `<button class="student" aria-label="生徒${p}を削除" onclick="removeStudent('${seat}', '${p}')">${p} ❌</button>`
+        ).join(' ')}</td>
+        <td>${rankingStr}</td>
+      `;
+      tbody.appendChild(row);
+    }
+    // 最新のseatMapを保存
+    localStorage.setItem("seatMap", JSON.stringify(seatMap));
   }
-  // テーブル更新時にseatMapの最新状態をローカルストレージに保存
-  localStorage.setItem("seatMap", JSON.stringify(seatMap));
-}
 
 // 座席から生徒を削除
 function removeStudent(seat, person) {
