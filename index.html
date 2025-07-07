@@ -128,6 +128,12 @@
     border-radius: 8px;
     box-shadow: 0 4px 8px rgba(0,0,0,0.15);
   }
+  .ranking-registered {
+    background-color: #c8e6c9; /* 薄い緑 */
+    font-weight: bold;
+    border-radius: 4px;
+    padding: 2px 6px;
+  }
   #sortable-player-list {
     list-style: none;
     padding: 0;
@@ -358,6 +364,8 @@
   }
 }
 
+localStorage.setItem("seatMap", JSON.stringify(seatMap));
+}
 // 座席から生徒を削除
 function removeStudent(seat, person) {
   const people = seatMap[seat];
@@ -466,40 +474,44 @@ function completeCurrentSeat() {
   }
 
   function saveSeatMapToDrive() {
-    fetch(API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain" },
-      body: JSON.stringify(seatMap)
-    })
-    .then(res => res.text())
-    .then(text => {
-      if (text.includes("saved")) {
-        displayMessage("✅ Google Driveに保存しました！");
-      } else {
-        displayMessage("❌ 保存に失敗しました: " + text);
-      }
-    })
-    .catch(err => {
-      console.error("保存エラー:", err);
-      displayMessage("❌ 保存エラーが発生しました");
-    });
-  }
-
-  async function loadSeatMapFromDrive() {
-    try {
-      const res = await fetch(API_URL);
-      if (!res.ok) throw new Error("読み込み失敗");
-      const json = await res.json();
-      seatMap = json;
-      updateTable();
-      displayMessage("☁ Google Driveから復元しました");
+  fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify(seatMap)
+  })
+  .then(res => res.text())
+  .then(text => {
+    if (text.includes("saved")) {
+      // 保存成功時にlocalStorageにも確実に保存
       localStorage.setItem("seatMap", JSON.stringify(seatMap));
-      updateCurrentSeatDisplay();
-    } catch (e) {
-      displayMessage("❌ Driveからの復元に失敗しました");
-      console.error(e);
+      displayMessage("✅ Google Driveに保存しました！");
+    } else {
+      displayMessage("❌ 保存に失敗しました: " + text);
     }
+  })
+  .catch(err => {
+    console.error("保存エラー:", err);
+    displayMessage("❌ 保存エラーが発生しました");
+  });
+}
+
+async function loadSeatMapFromDrive() {
+  try {
+    const res = await fetch(API_URL);
+    if (!res.ok) throw new Error("読み込み失敗");
+    const json = await res.json();
+    seatMap = json;
+    currentSeat = null;  // 復元時に座席選択リセット
+    updateTable();
+    displayMessage("☁ Google Driveから復元しました");
+    localStorage.setItem("seatMap", JSON.stringify(seatMap));
+    updateCurrentSeatDisplay();
+  } catch (e) {
+    displayMessage("❌ Driveからの復元に失敗しました");
+    console.error(e);
   }
+}
+
 
   function toggleRankingMode() {
     isRankingMode = !isRankingMode;
