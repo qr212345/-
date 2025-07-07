@@ -309,7 +309,6 @@
     btn.textContent = isRankingMode ? "📋 順位登録モードを終了" : "📋 順位登録モード切替";
   }
 
-  // ここを強化：現在の座席表示更新
   function updateCurrentSeatDisplay() {
     const el = document.getElementById("currentSeatText");
     if (!el) return;
@@ -473,96 +472,103 @@
   function showRankingSelection(seatID) {
     const playersInSeat = seatMap[seatID];
     if (!playersInSeat || playersInSeat.length === 0) {
-      displayMessage(`座席 ${seatID} にプレイヤーが登録されていません`);
+      displayMessage(`座席 ${seatID} に登録されたプレイヤーがいません。`);
       return;
     }
 
-    const existing = document.getElementById('ranking-select-ui');
-    if (existing) existing.remove();
-
-    const container = document.createElement('div');
-    container.id = 'ranking-select-ui';
+    // モーダルUIコンテナ
+    const container = document.createElement("div");
+    container.id = "ranking-select-ui";
     container.setAttribute("role", "dialog");
     container.setAttribute("aria-modal", "true");
+    container.setAttribute("aria-labelledby", "ranking-title");
 
-    const title = document.createElement('h3');
-    title.textContent = `座席 ${seatID} の順位を決めてください（ドラッグで並べ替え）`;
+    // タイトル
+    const title = document.createElement("h3");
+    title.id = "ranking-title";
+    title.textContent = `座席 ${seatID} の順位をドラッグ＆ドロップで並べ替え`;
     container.appendChild(title);
 
-    const list = document.createElement('ul');
-    list.id = 'sortable-player-list';
-
+    // ランキングリスト
+    const list = document.createElement("ul");
+    list.id = "sortable-player-list";
+    list.setAttribute("tabindex", "0");
     playersInSeat.forEach(player => {
-      const li = document.createElement('li');
+      const li = document.createElement("li");
       li.textContent = player;
-      li.setAttribute('tabindex', '0'); // ← これを追加
-      li.className = 'draggable-item';
+      li.setAttribute("draggable", "true");
       list.appendChild(li);
     });
-
     container.appendChild(list);
 
-    const btnSave = document.createElement('button');
-    btnSave.textContent = "順位を保存";
-    btnSave.onclick = () => {
-      saveRanking(seatID, [...list.children].map(li => li.textContent));
-      container.remove();
-      isRankingMode = false;
-      updateRankingToggleButton();
-    };
-    container.appendChild(btnSave);
+    // ボタン群
+    const btnSave = document.createElement("button");
+    btnSave.textContent = "順位を確定する";
+    btnSave.setAttribute("aria-label", "順位を確定するボタン");
 
-    const btnCancel = document.createElement('button');
+    const btnCancel = document.createElement("button");
     btnCancel.textContent = "キャンセル";
-    btnCancel.style.marginLeft = "10px";
-    btnCancel.onclick = () => {
-      container.remove();
-      displayMessage("順位登録をキャンセルしました");
-    };
+    btnCancel.setAttribute("aria-label", "順位登録をキャンセルするボタン");
+
+    container.appendChild(btnSave);
     container.appendChild(btnCancel);
 
     document.body.appendChild(container);
 
-    let dragged = null;
-    list.addEventListener('dragstart', (e) => {
-      dragged = e.target;
-      e.target.classList.add('dragging');
+    // スクロールロックON
+    document.body.style.overflow = "hidden";
+
+    // ドラッグ＆ドロップで並べ替え（シンプル版）
+    let draggedItem = null;
+
+    list.addEventListener("dragstart", (e) => {
+      draggedItem = e.target;
+      e.dataTransfer.effectAllowed = "move";
+      e.dataTransfer.setData("text/plain", "");
+      setTimeout(() => e.target.classList.add("dragging"), 0);
     });
-    list.addEventListener('dragend', (e) => {
-      e.target.classList.remove('dragging');
-      dragged = null;
+
+    list.addEventListener("dragend", (e) => {
+      e.target.classList.remove("dragging");
+      draggedItem = null;
     });
-    list.addEventListener('dragover', (e) => {
+
+    list.addEventListener("dragover", (e) => {
       e.preventDefault();
       const afterElement = getDragAfterElement(list, e.clientY);
       if (afterElement == null) {
-        list.appendChild(dragged);
+        list.appendChild(draggedItem);
       } else {
-        list.insertBefore(dragged, afterElement);
+        list.insertBefore(draggedItem, afterElement);
       }
     });
 
-    // 🆕 スマホタッチ操作を追加
-list.addEventListener('touchstart', (e) => {
-  dragged = e.target.closest('.draggable-item');
-  dragged.classList.add('dragging');
-  e.preventDefault();
-});
-list.addEventListener('touchmove', (e) => {
-  const touch = e.touches[0];
-  const afterElement = getDragAfterElement(list, touch.clientY);
-  if (afterElement && dragged !== afterElement) {
-    list.insertBefore(dragged, afterElement);
-  }
-  e.preventDefault();
-});
-list.addEventListener('touchend', (e) => {
-  if (dragged) dragged.classList.remove('dragging');
-  dragged = null;
-});
+    // タッチ操作対応（スマホ）
+    list.addEventListener("touchstart", (e) => {
+      draggedItem = e.target.closest("li");
+      if (!draggedItem) return;
+      draggedItem.classList.add("dragging");
+    }, { passive: true });
+
+    list.addEventListener("touchmove", (e) => {
+      if (!draggedItem) return;
+      e.preventDefault();
+      const touch = e.touches[0];
+      const afterElement = getDragAfterElement(list, touch.clientY);
+      if (afterElement == null) {
+        list.appendChild(draggedItem);
+      } else {
+        list.insertBefore(draggedItem, afterElement);
+      }
+    }, { passive: false });
+
+    list.addEventListener("touchend", (e) => {
+      if (draggedItem) draggedItem.classList.remove("dragging");
+      draggedItem = null;
+    });
 
     function getDragAfterElement(container, y) {
-      const draggableElements = [...container.querySelectorAll('.draggable-item:not(.dragging)')];
+      const draggableElements = [...container.querySelectorAll("li:not(.dragging)")];
       return draggableElements.reduce((closest, child) => {
         const box = child.getBoundingClientRect();
         const offset = y - box.top - box.height / 2;
@@ -573,11 +579,38 @@ list.addEventListener('touchend', (e) => {
         }
       }, { offset: Number.NEGATIVE_INFINITY }).element;
     }
+
+    btnSave.onclick = () => {
+      // 確定した順位リストを取得
+      const ranking = [...list.children].map(li => li.textContent);
+      // 保存処理は必要に応じて実装
+      saveRanking(seatID, ranking);
+
+      // 確定視覚エフェクト：背景色が一瞬変わる
+      container.style.transition = "background-color 0.5s ease";
+      container.style.backgroundColor = "#c8e6c9"; // 薄い緑
+
+      setTimeout(() => {
+        container.style.backgroundColor = "#fff"; // 元に戻す
+        container.remove();
+        document.body.style.overflow = ""; // スクロールロック解除
+      }, 800);
+
+      isRankingMode = false;
+      updateRankingToggleButton();
+      displayMessage(`座席${seatID}の順位を登録しました。`);
+    };
+
+    btnCancel.onclick = () => {
+      container.remove();
+      document.body.style.overflow = ""; // スクロールロック解除
+      displayMessage("順位登録をキャンセルしました。");
+    };
   }
 
-  function saveRanking(seatID, rankedPlayers) {
-    displayMessage(`座席${seatID}の順位を保存しました: ${rankedPlayers.join(", ")}`);
-    // 実際の順位反映はここに実装してください
+  function saveRanking(seatID, ranking) {
+    // 実際の順位保存処理（必要に応じて実装）
+    console.log(`座席 ${seatID} の順位`, ranking);
   }
 </script>
 
