@@ -676,6 +676,133 @@ async function loadSeatMapFromDrive() {
 
   console.log(`座席 ${seatID} の順位をローカルストレージに保存しました。`, ranking);
 }
+　// レート変動計算関数
+function calculateRateChange({
+  currentRate,
+  prevRank,
+  newRank,
+  totalPlayers,
+  lastWasLast = false,
+  isTopPlayer = false,
+  isLastPlayer = false,
+  lastTopPlayerRate = null,
+}) {
+  let delta = 0;
+
+  // 順位による基本ポイント変動
+  if (prevRank === 1 && newRank === totalPlayers) {
+    // 1位から最下位への減点
+    delta = -5;
+  } else if (prevRank === totalPlayers && newRank === 1) {
+    // 最下位から1位への加点
+    delta = 5;
+  } else if (newRank === totalPlayers && lastWasLast) {
+    // 最下位連続の場合ボーナス
+    delta = 8;
+  } else {
+    // 単純な順位差分（例：前回4位→今回2位で+2点）
+    delta = prevRank - newRank;
+  }
+
+  // 高レート者補正 (80以上は0.8倍)
+  if (currentRate >= 80) {
+    delta = Math.floor(delta * 0.8);
+  }
+
+  // 総合1位より上位を取った場合のボーナス
+  if (isTopPlayer && newRank === 1) {
+    delta += 2;
+  }
+
+  // 最下位が総合1位に勝った特別ボーナス
+  if (newRank === 1 && prevRank === totalPlayers && isLastPlayer) {
+    delta += 10;
+  }
+
+  // 新しいレート計算
+  let newRate = currentRate + delta;
+
+  // 最低レート30以下にならないように調整
+  if (newRate < 30) newRate = 30;
+
+  // 変動量返却（UI表示などに使う）
+  return {
+    newRate,
+    delta,
+  };
+}
+
+// プレイヤー情報（例）
+let players = {
+  "player001": {
+    name: "イチゴ太郎",
+    currentRate: 50,
+    prevRank: 3,
+    lastWasLast: false,
+    isTopPlayer: false,
+    isLastPlayer: false,
+  },
+  "player002": {
+    name: "ミカン次郎",
+    currentRate: 82,
+    prevRank: 1,
+    lastWasLast: false,
+    isTopPlayer: true,
+    isLastPlayer: false,
+  },
+  // 他プレイヤー...
+};
+
+// 試合終了後に順位配列を渡して更新
+function updatePlayersAfterMatch(rankings) {
+  const totalPlayers = rankings.length;
+  const topPlayerId = rankings[0];
+  const topPlayerRate = players[topPlayerId]?.currentRate ?? 50;
+
+  rankings.forEach((playerId, index) => {
+    const player = players[playerId];
+    if (!player) return;
+
+    const prevRank = player.prevRank || totalPlayers; // 前回順位がなければ最下位想定
+    const newRank = index + 1;
+    const isLastPlayer = (playerId === rankings[totalPlayers - 1]);
+
+    const { newRate, delta } = calculateRateChange({
+      currentRate: player.currentRate,
+      prevRank,
+      newRank,
+      totalPlayers,
+      lastWasLast: player.lastWasLast,
+      isTopPlayer: player.isTopPlayer,
+      isLastPlayer,
+      lastTopPlayerRate: topPlayerRate,
+    });
+
+    // 更新
+    player.currentRate = newRate;
+    player.prevRank = newRank;
+    player.lastWasLast = (newRank === totalPlayers);
+    player.isTopPlayer = (newRank === 1);
+
+    console.log(`${player.name} のレート変動: ${delta} → 新レート: ${newRate}`);
+  });
+}
+
+// ローカルストレージに保存
+function savePlayersData() {
+  localStorage.setItem("playersData", JSON.stringify(players));
+}
+
+// ----------- 動作例 -----------
+
+// ある試合の順位が確定したときのプレイヤーID順配列（1位が先頭）
+const exampleRanking = ["player002", "player001"];
+
+updatePlayersAfterMatch(exampleRanking);
+savePlayersData();
+
+console.log(players);
+
 </script>
 
 </body>
