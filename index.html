@@ -359,7 +359,13 @@
       <td>${people.map(p =>
         `<button class="student" aria-label="生徒${p}を削除" onclick="removeStudent('${seat}', '${p}')">${p} ❌</button>`
       ).join(' ')}</td>
-      <td>${rankingStr}</td>  <!-- ←追加 -->
+       <td>${rankingStr}</td>
+    `;
+    tbody.appendChild(row);
+  }
+  localStorage.setItem("seatMap", JSON.stringify(seatMap));
+}
+  
   function removeStudent(seat, person) {
     const people = seatMap[seat];
     if (!people) return;
