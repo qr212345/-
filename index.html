@@ -609,9 +609,17 @@
   }
 
   function saveRanking(seatID, ranking) {
-    // 実際の順位保存処理（必要に応じて実装）
-    console.log(`座席 ${seatID} の順位`, ranking);
-  }
+  // 既存の順位データを取得（無ければ空オブジェクト）
+  const savedRankings = JSON.parse(localStorage.getItem("seatRankings") || "{}");
+
+  // 今回の座席の順位を保存
+  savedRankings[seatID] = ranking;
+
+  // ローカルストレージに保存（文字列化）
+  localStorage.setItem("seatRankings", JSON.stringify(savedRankings));
+
+  console.log(`座席 ${seatID} の順位をローカルストレージに保存しました。`, ranking);
+}
 </script>
 
 </body>
