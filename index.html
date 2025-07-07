@@ -362,8 +362,10 @@
     `;
     tbody.appendChild(row);
   }
-　localStorage.setItem("seatMap", JSON.stringify(seatMap));
+  // テーブル更新時にseatMapの最新状態をローカルストレージに保存
+  localStorage.setItem("seatMap", JSON.stringify(seatMap));
 }
+
 // 座席から生徒を削除
 function removeStudent(seat, person) {
   const people = seatMap[seat];
@@ -374,6 +376,7 @@ function removeStudent(seat, person) {
     displayMessage(`座席「${seat}」から「${person}」を削除しました。`);
     updateTable();
     if (seat === currentSeat) updateCurrentSeatDisplay();
+    // ※ ここでのlocalStorage保存はupdateTableで行われるため不要
   }
 }
 
@@ -388,8 +391,10 @@ function removeSeat(seat) {
       updateCurrentSeatDisplay();
     }
     updateTable();
+    // ※ ここでのlocalStorage保存はupdateTableで行われるため不要
   }
 }
+
 
 function completeCurrentSeat() {
   if (currentSeat) {
