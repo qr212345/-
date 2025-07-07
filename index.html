@@ -337,20 +337,14 @@
     }
   }
 
- function updateTable() {
+　function updateTable() {
   const tbody = document.querySelector('#seatTable tbody');
   tbody.innerHTML = '';
   const savedRankings = JSON.parse(localStorage.getItem("seatRankings") || "{}");
 
   for (const [seat, people] of Object.entries(seatMap)) {
-    // 順位情報があれば取り出す（配列）
     const ranking = savedRankings[seat] || [];
-
-    // 順位表示用文字列を作る（順位=配列のindex+1）
-    // 例：rankingが ['player2', 'player1', 'player3']なら「1:player2 2:player1 3:player3」
     let rankingStr = ranking.map((player, i) => `${i + 1}:${player}`).join(' ');
-
-    // 順位がまだない場合は空文字にするなど
     if (!rankingStr) rankingStr = '-';
 
     const row = document.createElement('tr');
@@ -359,24 +353,39 @@
       <td>${people.map(p =>
         `<button class="student" aria-label="生徒${p}を削除" onclick="removeStudent('${seat}', '${p}')">${p} ❌</button>`
       ).join(' ')}</td>
-       <td>${rankingStr}</td>
+      <td>${rankingStr}</td>
     `;
     tbody.appendChild(row);
   }
-  localStorage.setItem("seatMap", JSON.stringify(seatMap));
 }
-  
-  function removeStudent(seat, person) {
-    const people = seatMap[seat];
-    if (!people) return;
-    const index = people.indexOf(person);
-    if (index !== -1) {
-      people.splice(index, 1);
-      displayMessage(`座席「${seat}」から「${person}」を削除しました。`);
-      updateTable();
-      if (seat === currentSeat) updateCurrentSeatDisplay();
-    }
+
+// ここからはupdateTableの外に出す
+
+function removeStudent(seat, person) {
+  const people = seatMap[seat];
+  if (!people) return;
+  const index = people.indexOf(person);
+  if (index !== -1) {
+    people.splice(index, 1);
+    displayMessage(`座席「${seat}」から「${person}」を削除しました。`);
+    updateTable();
+    if (seat === currentSeat) updateCurrentSeatDisplay();
   }
+}
+
+function removeSeat(seat) {
+  if (confirm(`座席「${seat}」を削除しますか？（生徒もすべて削除されます）`)) {
+    delete seatMap[seat];
+    displayMessage(`座席「${seat}」を削除しました。`);
+    if (currentSeat === seat) {
+      currentSeat = null;
+      updateCompleteSeatBtn(false);
+      updateCurrentSeatDisplay();
+    }
+    updateTable();
+  }
+}
+
 
   function removeSeat(seat) {
     if (confirm(`座席「${seat}」を削除しますか？（生徒もすべて削除されます）`)) {
